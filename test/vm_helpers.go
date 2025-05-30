@@ -26,6 +26,9 @@ func retryIPFromMAC(errCh chan error, macAddress string) (string, error) {
 		ip  string
 	)
 
+	timeoutTimer := time.NewTimer(10 * time.Second)
+	defer timeoutTimer.Stop()
+
 	for {
 		select {
 		case err := <-errCh:
@@ -36,7 +39,7 @@ func retryIPFromMAC(errCh chan error, macAddress string) (string, error) {
 				log.Infof("found IP address %s for MAC %s", ip, macAddress)
 				return ip, nil
 			}
-		case <-time.After(10 * time.Second):
+		case <-timeoutTimer.C:
 			return "", fmt.Errorf("timeout getting IP from MAC: %w", err)
 		}
 	}
@@ -47,6 +50,10 @@ func retrySSHDial(errCh chan error, scheme string, address string, sshConfig *ss
 		sshClient *ssh.Client
 		err       error
 	)
+
+	timeoutTimer := time.NewTimer(10 * time.Second)
+	defer timeoutTimer.Stop()
+
 	for {
 		select {
 		case err := <-errCh:
@@ -59,7 +66,7 @@ func retrySSHDial(errCh chan error, scheme string, address string, sshConfig *ss
 				return sshClient, nil
 			}
 			log.Debugf("ssh failed: %v", err)
-		case <-time.After(10 * time.Second):
+		case <-timeoutTimer.C:
 			return nil, fmt.Errorf("timeout waiting for SSH: %w", err)
 		}
 	}
